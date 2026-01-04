@@ -11,38 +11,6 @@ so we learn interactively without turning the pipeline into a notebook-only arti
 # Run this file from the repo root in VS Code, or set PYTHONPATH accordingly.
 
 
-
-
-# DIAGNOSTIC CODE TO CHECK IMPORTS
-
-
-
-
-# %%
-import os, sys
-from pathlib import Path
-
-print("CWD (os.getcwd):", os.getcwd())
-print("CWD (Path.cwd):", Path.cwd())
-print("First 5 sys.path entries:")
-for p in sys.path[:5]:
-    print("  ", p)
-
-# Check whether src exists where Python thinks it is
-candidate = Path.cwd() / "src"
-print("Does CWD/src exist?", candidate.exists(), "->", candidate)
-
-# Also check parent folder (common if CWD is notebooks/)
-parent_candidate = Path.cwd().parent / "src"
-print("Does parent/src exist?", parent_candidate.exists(), "->", parent_candidate)
-
-
-
-
-
-
-
-
 # %%
 import sys
 from pathlib import Path
@@ -52,7 +20,7 @@ if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
 print("Repo root:", repo_root)
-print("sys.path[0]:", sys.path[0])
+
 
 # %%
 from pathlib import Path
@@ -79,13 +47,22 @@ pd.set_option("display.width", 140)
 
 # %%
 # 1) Confirm repo structure + config exists
-assert Path("configs/aoi_bbox.yaml").exists(), "Missing configs/aoi_bbox.yaml"
+
+# %%
+config_path = repo_root / "configs" / "aoi_bbox.yaml"
+print("Checking:", config_path)
+
+assert config_path.exists(), f"Missing {config_path}"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 print("Repo root OK. Config found.")
 
+
+
+
+
 # %%
 # 2) Load AOI (bbox) from YAML
-aoi = read_aoi("configs/aoi_bbox.yaml")
+aoi = read_aoi(config_path)
 print("AOI:", aoi)
 
 # %%
