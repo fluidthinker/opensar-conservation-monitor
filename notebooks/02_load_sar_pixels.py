@@ -45,20 +45,18 @@ from src.stac.load_s1_grd_pair import (
 pd.set_option("display.max_columns", 50)
 pd.set_option("display.width", 140)
 
+
+
+
 # %%
 # 1) Confirm repo structure + config exists
 
-# %%
 config_path = repo_root / "configs" / "aoi_bbox.yaml"
 print("Checking:", config_path)
 
 assert config_path.exists(), f"Missing {config_path}"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 print("Repo root OK. Config found.")
-
-
-
-
 
 # %%
 # 2) Load AOI (bbox) from YAML
