@@ -1,0 +1,56 @@
+# ----------------------------
+# Python
+# ----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ----------------------------
+# Conda / virtual env
+# ----------------------------
+.env
+.venv
+conda-meta/
+env/
+ENV/
+
+# ----------------------------
+# Jupyter / VS Code
+# ----------------------------
+.ipynb_checkpoints/
+.vscode/
+*.log
+
+# ----------------------------
+# Data (large, regeneratable)
+# ----------------------------
+data/raw/
+data/interim/
+data/processed/
+data/external/
+
+# ----------------------------
+# Outputs (derived, regeneratable)
+# ----------------------------
+outputs/figures/tmp/
+outputs/maps/tmp/
+
+# (keep final figures/maps, ignore only temp if you create them)
+
+# ----------------------------
+# Raster / geospatial large files
+# ----------------------------
+*.tif
+*.tiff
+*.cog.tif
+*.nc
+*.zarr
+*.gpkg
+*.vrt
+
+# ----------------------------
+# OS junk
+# ----------------------------
+.DS_Store
+Thumbs.db

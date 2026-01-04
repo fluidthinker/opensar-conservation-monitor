@@ -47,12 +47,12 @@ print("Does parent/src exist?", parent_candidate.exists(), "->", parent_candidat
 import sys
 from pathlib import Path
 
-# Add repo root to Python path
-repo_root = Path.cwd()
+repo_root = Path.cwd().resolve().parent  # notebooks/ -> repo root
 if str(repo_root) not in sys.path:
     sys.path.insert(0, str(repo_root))
 
-print("Repo root added to sys.path:", repo_root)
+print("Repo root:", repo_root)
+print("sys.path[0]:", sys.path[0])
 
 # %%
 from pathlib import Path
