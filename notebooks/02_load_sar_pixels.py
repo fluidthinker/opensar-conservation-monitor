@@ -286,26 +286,68 @@ qstats(dvv,  "ΔVV (POST-PRE)")
 qstats(dvh,  "ΔVH (POST-PRE)")
 qstats(ddif, "Δ(VV−VH) (POST-PRE)")
 
+# 20) Intentially deleted
+
+
 
 # %%
-# 20) Visualize change layers
-plt.figure()
-plt.imshow(dvv.values)
-plt.title("ΔVV (POST - PRE)")
-plt.axis("off")
-plt.show()
+# 21) Diagnose why the change looks flat: print robust stats for the linear deltas
+def qstats(da, name):
+    q = da.quantile([0.02, 0.5, 0.98], dim=("y", "x"), skipna=True)
+    print(
+        f"{name}: p2={float(q.sel(quantile=0.02).values):.3f}, "
+        f"median={float(q.sel(quantile=0.5).values):.3f}, "
+        f"p98={float(q.sel(quantile=0.98).values):.3f}"
+    )
 
-plt.figure()
-plt.imshow(dvh.values)
-plt.title("ΔVH (POST - PRE)")
-plt.axis("off")
-plt.show()
+qstats(dvv,  "ΔVV linear (POST-PRE)")
+qstats(dvh,  "ΔVH linear (POST-PRE)")
+qstats(ddif, "Δ(VV−VH) linear (POST-PRE)")
 
-plt.figure()
-plt.imshow(ddif.values)
-plt.title("Δ(VV−VH) (POST - PRE)")
-plt.axis("off")
-plt.show()
+
+# %%
+# 22) Plot deltas with a robust, symmetric stretch around 0 + colorbar
+#     This is the quickest way to reveal subtle change patterns.
+import matplotlib.pyplot as plt
+import numpy as np
+
+def plot_delta(da, title, p=98):
+    # robust symmetric limits around 0 using percentile of absolute values
+    abs_p = float(np.nanpercentile(np.abs(da.values), p))
+    plt.figure()
+    plt.imshow(da.values, vmin=-abs_p, vmax=abs_p, cmap="RdBu_r")
+    plt.title(f"{title} (±p{p} abs)")
+    plt.axis("off")
+    plt.colorbar(shrink=0.8)
+    plt.show()
+
+plot_delta(dvv,  "ΔVV linear (POST-PRE)", p=98)
+plot_delta(dvh,  "ΔVH linear (POST-PRE)", p=98)
+plot_delta(ddif, "Δ(VV−VH) linear (POST-PRE)", p=98)
+
+
+# %%
+# 23) Convert VV/VH to dB, then compute deltas in dB (usually much more interpretable)
+#     NOTE: We add a tiny epsilon to avoid log(0).
+eps = 1e-6
+
+vv_pre_db  = 10.0 * np.log10(vv_pre + eps)
+vh_pre_db  = 10.0 * np.log10(vh_pre + eps)
+vv_post_db = 10.0 * np.log10(vv_post + eps)
+vh_post_db = 10.0 * np.log10(vh_post + eps)
+
+dvv_db = vv_post_db - vv_pre_db
+dvh_db = vh_post_db - vh_pre_db
+
+qstats(dvv_db, "ΔVV dB (POST-PRE)")
+qstats(dvh_db, "ΔVH dB (POST-PRE)")
+
+
+# %%
+# 24) Plot dB deltas with robust symmetric stretch around 0
+plot_delta(dvv_db, "ΔVV dB (POST-PRE)", p=98)
+plot_delta(dvh_db, "ΔVH dB (POST-PRE)", p=98)
+
 
 
 
