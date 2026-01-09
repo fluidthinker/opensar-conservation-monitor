@@ -63,7 +63,7 @@ from typing import Iterable, Optional
 import pandas as pd
 import yaml
 from pystac_client import Client
-
+from shapely.geometry import box
 import planetary_computer as pc
 import odc.stac
 import xarray as xr
@@ -330,16 +330,19 @@ def load_item_to_xarray(item, aoi: AOI) -> xr.Dataset:
     """
     # Sign the item so all its asset URLs are usable.
     signed_item = pc.sign(item)
-
-    # Load as xarray Dataset. This is where raster IO happens.
+    # Build an AOI polygon in lon/lat (EPSG:4326)
+    # (Assuming your aoi object has .bbox as (west, south, east, north))
+    west, south, east, north = aoi.bbox
+    geom4326 = box(west, south, east, north)
     ds = odc.stac.load(
         [signed_item],
         measurements=["vv", "vh"],
-        bbox=aoi.bbox,
-        crs="EPSG:4326",  # keep simple; we can pick a projected CRS later if desired
-        # Later optimization: add chunks=... for Dask, or resolution=...
+        geopolygon=geom4326,   # AOI in lon/lat
+        crs="EPSG:3857",       # output grid in meters (Web Mercator)
+        resolution=10,         # 10 m pixels (reasonable default for S1 GRD style analysis)
+        chunks={},             # optional: helps keep it lazy/dask-friendly
     )
-
+   
     return ds
 
 
