@@ -152,3 +152,195 @@ summarize(ds_post["vv"], "POST VV")
 summarize(ds_post["vh"], "POST VH")
 
 # %%
+# 12) Sanity check: confirm PRE and POST share the same grid (critical before differencing)
+same_x = ds_pre["x"].equals(ds_post["x"])
+same_y = ds_pre["y"].equals(ds_post["y"])
+
+print("Same x grid?", same_x)
+print("Same y grid?", same_y)
+print("PRE vv shape:", ds_pre["vv"].shape, "POST vv shape:", ds_post["vv"].shape)
+
+if not (same_x and same_y):
+    print("⚠️ Grids differ. You can still proceed for visualization, but DO NOT do pixel-wise change "
+          "until resampling one dataset onto the other's grid.")
+
+
+# %%
+# 13) Prepare 2D arrays (drop time dimension) and derive VV−VH
+import xarray as xr
+
+vv_pre  = ds_pre["vv"].isel(time=0)
+vh_pre  = ds_pre["vh"].isel(time=0)
+vv_post = ds_post["vv"].isel(time=0)
+vh_post = ds_post["vh"].isel(time=0)
+
+diff_pre  = vv_pre - vh_pre
+diff_post = vv_post - vh_post
+
+print("2D shapes:", vv_pre.shape, vv_post.shape)
+
+
+# %%
+# 14) Compute SHARED stretch bounds (one set of p2/p98 per channel across BOTH dates)
+#     This is the “honest comparison” core: same stretch => fair visual comparison.
+def shared_percentiles(a: xr.DataArray, b: xr.DataArray, p=(2, 98)) -> tuple[float, float]:
+    stacked = xr.concat([a, b], dim="stack")
+    q = stacked.quantile([p[0] / 100, p[1] / 100], dim=("stack", "y", "x"), skipna=True)
+    lo = float(q.sel(quantile=p[0] / 100).values)
+    hi = float(q.sel(quantile=p[1] / 100).values)
+    return lo, hi
+
+vv_lo, vv_hi   = shared_percentiles(vv_pre,   vv_post,  p=(2, 98))
+vh_lo, vh_hi   = shared_percentiles(vh_pre,   vh_post,  p=(2, 98))
+dif_lo, dif_hi = shared_percentiles(diff_pre, diff_post, p=(2, 98))
+
+print("Shared VV  p2/p98:", vv_lo, vv_hi)
+print("Shared VH  p2/p98:", vh_lo, vh_hi)
+print("Shared DIF p2/p98:", dif_lo, dif_hi)
+
+
+# %%
+# 15) Build RGB composites using shared stretch:
+#     R = VV, G = VH, B = VV − VH
+def scale01(da: xr.DataArray, lo: float, hi: float) -> xr.DataArray:
+    clipped = da.clip(min=lo, max=hi)
+    return (clipped - lo) / (hi - lo)
+
+rgb_pre = xr.concat(
+    [
+        scale01(vv_pre,   vv_lo,  vv_hi),   # R
+        scale01(vh_pre,   vh_lo,  vh_hi),   # G
+        scale01(diff_pre, dif_lo, dif_hi),  # B
+    ],
+    dim="band",
+).assign_coords(band=["R(VV)", "G(VH)", "B(VV-VH)"])
+
+rgb_post = xr.concat(
+    [
+        scale01(vv_post,   vv_lo,  vv_hi),
+        scale01(vh_post,   vh_lo,  vh_hi),
+        scale01(diff_post, dif_lo, dif_hi),
+    ],
+    dim="band",
+).assign_coords(band=["R(VV)", "G(VH)", "B(VV-VH)"])
+
+print("RGB PRE:", rgb_pre)
+print("RGB POST:", rgb_post)
+
+
+# %%
+# 16) Quick side-by-side visualization (shared stretch)
+import matplotlib.pyplot as plt
+
+def show_rgb(rgb: xr.DataArray, title: str):
+    # xarray is (band, y, x) — matplotlib wants (y, x, band)
+    img = rgb.transpose("y", "x", "band").values
+    plt.figure()
+    plt.imshow(img)
+    plt.title(title)
+    plt.axis("off")
+    plt.show()
+
+show_rgb(rgb_pre,  "PRE composite (shared stretch)")
+show_rgb(rgb_post, "POST composite (shared stretch)")
+
+
+# %%
+# 17) If plotting is slow: downsample for display only (no scientific meaning; just speed)
+rgb_pre_small  = rgb_pre.isel(y=slice(None, None, 4), x=slice(None, None, 4))
+rgb_post_small = rgb_post.isel(y=slice(None, None, 4), x=slice(None, None, 4))
+
+show_rgb(rgb_pre_small,  "PRE composite (downsampled for display)")
+show_rgb(rgb_post_small, "POST composite (downsampled for display)")
+
+
+# %%
+# 18) Simple change layers (only do pixel-wise change confidently if grids match!)
+#     ΔVV = VV_post - VV_pre
+#     ΔVH = VH_post - VH_pre
+#     ΔDIF = (VV−VH)_post - (VV−VH)_pre
+dvv  = vv_post - vv_pre
+dvh  = vh_post - vh_pre
+ddif = diff_post - diff_pre
+
+# quick robust stats (p2/median/p98)
+def qstats(da: xr.DataArray, name: str):
+    q = da.quantile([0.02, 0.5, 0.98], dim=("y", "x"), skipna=True)
+    print(f"{name}: p2={float(q.sel(quantile=0.02).values):.3f}, "
+          f"median={float(q.sel(quantile=0.5).values):.3f}, "
+          f"p98={float(q.sel(quantile=0.98).values):.3f}")
+
+qstats(dvv,  "ΔVV (POST-PRE)")
+qstats(dvh,  "ΔVH (POST-PRE)")
+qstats(ddif, "Δ(VV−VH) (POST-PRE)")
+
+
+
+
+# %%
+# 19) Visualize change layers (basic imshow; no special colormaps yet)
+#     Note: if grids differ, these visuals may still render but aren't pixel-to-pixel comparable.
+plt.figure()
+plt.imshow(dvv.values)
+plt.title("ΔVV (POST - PRE)")
+plt.axis("off")
+plt.show()
+
+plt.figure()
+plt.imshow(dvh.values)
+plt.title("ΔVH (POST - PRE)")
+plt.axis("off")
+plt.show()
+
+plt.figure()
+plt.imshow(ddif.values)
+plt.title("Δ(VV−VH) (POST - PRE)")
+plt.axis("off")
+plt.show()
+
+
+# %%
+# 20) (Optional) Save portfolio-ready PNGs of PRE/POST composites (shared stretch)
+#     Uses downsampled versions for speed/size; switch to rgb_pre/rgb_post for full-res.
+out_dir = OUT_DIR  # from your module import
+out_dir.mkdir(parents=True, exist_ok=True)
+
+def save_rgb_png(rgb: xr.DataArray, path, title: str):
+    img = rgb.transpose("y", "x", "band").values
+    plt.figure()
+    plt.imshow(img)
+    plt.title(title)
+    plt.axis("off")
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()
+
+save_rgb_png(rgb_pre_small,  out_dir / "pre_rgb_shared.png",  "PRE composite (shared stretch)")
+save_rgb_png(rgb_post_small, out_dir / "post_rgb_shared.png", "POST composite (shared stretch)")
+
+print("Wrote:")
+print(" -", out_dir / "pre_rgb_shared.png")
+print(" -", out_dir / "post_rgb_shared.png")
+
+
+# %%
+# 21) (Optional) Save change PNGs (downsampled for speed/size)
+dvv_small  = dvv.isel(y=slice(None, None, 4), x=slice(None, None, 4))
+dvh_small  = dvh.isel(y=slice(None, None, 4), x=slice(None, None, 4))
+ddif_small = ddif.isel(y=slice(None, None, 4), x=slice(None, None, 4))
+
+def save_layer_png(layer: xr.DataArray, path, title: str):
+    plt.figure()
+    plt.imshow(layer.values)
+    plt.title(title)
+    plt.axis("off")
+    plt.savefig(path, dpi=200, bbox_inches="tight")
+    plt.close()
+
+save_layer_png(dvv_small,  out_dir / "change_dvv.png",  "ΔVV (POST - PRE)")
+save_layer_png(dvh_small,  out_dir / "change_dvh.png",  "ΔVH (POST - PRE)")
+save_layer_png(ddif_small, out_dir / "change_ddif.png", "Δ(VV−VH) (POST - PRE)")
+
+print("Wrote:")
+print(" -", out_dir / "change_dvv.png")
+print(" -", out_dir / "change_dvh.png")
+print(" -", out_dir / "change_ddif.png")
