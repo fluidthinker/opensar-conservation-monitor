@@ -71,6 +71,7 @@ print("Pre candidates:", len(pre_items))
 pre_df = to_rows(pre_items)
 pre_df.head(10)
 
+
 # %%
 # 4) STAC search: POST window
 post_items = stac_search(aoi, POST_WINDOW)
