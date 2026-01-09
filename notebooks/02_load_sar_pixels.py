@@ -152,7 +152,27 @@ summarize(ds_post["vv"], "POST VV")
 summarize(ds_post["vh"], "POST VH")
 
 # %%
-# 12) Sanity check: confirm PRE and POST share the same grid (critical before differencing)
+# 12) Reload from local NetCDF caches to avoid re-reading remote TIFF tiles during heavy computes
+#     (Step 10 already wrote these)
+import xarray as xr
+
+pre_path = data_dir / "sar_pre.nc"
+post_path = data_dir / "sar_post.nc"
+
+print("Reloading local caches:")
+print(" -", pre_path)
+print(" -", post_path)
+
+ds_pre = xr.open_dataset(pre_path, chunks={})
+ds_post = xr.open_dataset(post_path, chunks={})
+
+print("Loaded ds_pre:", ds_pre)
+print("Loaded ds_post:", ds_post)
+
+
+
+# %%
+# 13) Sanity check: confirm PRE and POST share the same grid (critical before differencing)
 same_x = ds_pre["x"].equals(ds_post["x"])
 same_y = ds_pre["y"].equals(ds_post["y"])
 
@@ -166,9 +186,7 @@ if not (same_x and same_y):
 
 
 # %%
-# 13) Prepare 2D arrays (drop time dimension) and derive VV−VH
-import xarray as xr
-
+# 14) Prepare 2D arrays (drop time dimension) and derive VV−VH
 vv_pre  = ds_pre["vv"].isel(time=0)
 vh_pre  = ds_pre["vh"].isel(time=0)
 vv_post = ds_post["vv"].isel(time=0)
@@ -181,9 +199,8 @@ print("2D shapes:", vv_pre.shape, vv_post.shape)
 
 
 # %%
-# 14) Compute SHARED stretch bounds (one set of p2/p98 per channel across BOTH dates)
-#     This is the “honest comparison” core: same stretch => fair visual comparison.
-def shared_percentiles(a: xr.DataArray, b: xr.DataArray, p=(2, 98)) -> tuple[float, float]:
+# 15) Compute SHARED stretch bounds (one set of p2/p98 per channel across BOTH dates)
+def shared_percentiles(a: xr.DataArray, b: xr.DataArray, p=(2, 98)):
     stacked = xr.concat([a, b], dim="stack")
     q = stacked.quantile([p[0] / 100, p[1] / 100], dim=("stack", "y", "x"), skipna=True)
     lo = float(q.sel(quantile=p[0] / 100).values)
@@ -200,7 +217,7 @@ print("Shared DIF p2/p98:", dif_lo, dif_hi)
 
 
 # %%
-# 15) Build RGB composites using shared stretch:
+# 16) Build RGB composites using shared stretch:
 #     R = VV, G = VH, B = VV − VH
 def scale01(da: xr.DataArray, lo: float, hi: float) -> xr.DataArray:
     clipped = da.clip(min=lo, max=hi)
@@ -229,11 +246,10 @@ print("RGB POST:", rgb_post)
 
 
 # %%
-# 16) Quick side-by-side visualization (shared stretch)
+# 17) Quick visualization (shared stretch)
 import matplotlib.pyplot as plt
 
 def show_rgb(rgb: xr.DataArray, title: str):
-    # xarray is (band, y, x) — matplotlib wants (y, x, band)
     img = rgb.transpose("y", "x", "band").values
     plt.figure()
     plt.imshow(img)
@@ -246,7 +262,7 @@ show_rgb(rgb_post, "POST composite (shared stretch)")
 
 
 # %%
-# 17) If plotting is slow: downsample for display only (no scientific meaning; just speed)
+# 18) Downsample for display-only (optional)
 rgb_pre_small  = rgb_pre.isel(y=slice(None, None, 4), x=slice(None, None, 4))
 rgb_post_small = rgb_post.isel(y=slice(None, None, 4), x=slice(None, None, 4))
 
@@ -255,15 +271,11 @@ show_rgb(rgb_post_small, "POST composite (downsampled for display)")
 
 
 # %%
-# 18) Simple change layers (only do pixel-wise change confidently if grids match!)
-#     ΔVV = VV_post - VV_pre
-#     ΔVH = VH_post - VH_pre
-#     ΔDIF = (VV−VH)_post - (VV−VH)_pre
+# 19) Simple change layers
 dvv  = vv_post - vv_pre
 dvh  = vh_post - vh_pre
 ddif = diff_post - diff_pre
 
-# quick robust stats (p2/median/p98)
 def qstats(da: xr.DataArray, name: str):
     q = da.quantile([0.02, 0.5, 0.98], dim=("y", "x"), skipna=True)
     print(f"{name}: p2={float(q.sel(quantile=0.02).values):.3f}, "
@@ -275,11 +287,8 @@ qstats(dvh,  "ΔVH (POST-PRE)")
 qstats(ddif, "Δ(VV−VH) (POST-PRE)")
 
 
-
-
 # %%
-# 19) Visualize change layers (basic imshow; no special colormaps yet)
-#     Note: if grids differ, these visuals may still render but aren't pixel-to-pixel comparable.
+# 20) Visualize change layers
 plt.figure()
 plt.imshow(dvv.values)
 plt.title("ΔVV (POST - PRE)")
@@ -299,8 +308,14 @@ plt.axis("off")
 plt.show()
 
 
+
+
+
+
+
+
 # %%
-# 20) (Optional) Save portfolio-ready PNGs of PRE/POST composites (shared stretch)
+# XX) (Optional) Save portfolio-ready PNGs of PRE/POST composites (shared stretch)
 #     Uses downsampled versions for speed/size; switch to rgb_pre/rgb_post for full-res.
 out_dir = OUT_DIR  # from your module import
 out_dir.mkdir(parents=True, exist_ok=True)
@@ -323,7 +338,7 @@ print(" -", out_dir / "post_rgb_shared.png")
 
 
 # %%
-# 21) (Optional) Save change PNGs (downsampled for speed/size)
+# XX) (Optional) Save change PNGs (downsampled for speed/size)
 dvv_small  = dvv.isel(y=slice(None, None, 4), x=slice(None, None, 4))
 dvh_small  = dvh.isel(y=slice(None, None, 4), x=slice(None, None, 4))
 ddif_small = ddif.isel(y=slice(None, None, 4), x=slice(None, None, 4))
