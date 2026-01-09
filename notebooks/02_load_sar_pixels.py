@@ -99,6 +99,38 @@ post_pick = pick_closest(post_items, TARGET_POST_DATE, prefer_orbit_state=orbit)
 print("Selected PRE :", pre_pick.id, pre_pick.datetime, orbit)
 print("Selected POST:", post_pick.id, post_pick.datetime, post_pick.properties.get("sat:orbit_state"))
 
+# REMOVE DIAGNOSTIC 
+# %%
+from shapely.geometry import box
+import odc.stac
+import planetary_computer as pc
+
+def load_item_to_xarray(item, aoi):
+    signed_item = pc.sign(item)
+
+    # Build an AOI polygon in lon/lat (EPSG:4326)
+    # (Assuming your aoi object has .bbox as (west, south, east, north))
+    west, south, east, north = aoi.bbox
+    geom4326 = box(west, south, east, north)
+
+    ds = odc.stac.load(
+        [signed_item],
+        measurements=["vv", "vh"],
+        geopolygon=geom4326,   # AOI in lon/lat
+        crs="EPSG:3857",       # output grid in meters (Web Mercator)
+        resolution=10,         # 10 m pixels (reasonable default for S1 GRD style analysis)
+        chunks={},             # optional: helps keep it lazy/dask-friendly
+    )
+    return ds
+
+
+
+
+
+
+
+
+
 # %%
 # 7) Load pixels into xarray (this is where pixels enter memory)
 ds_pre = load_item_to_xarray(pre_pick, aoi)
@@ -148,3 +180,5 @@ summarize(ds_pre["vv"], "PRE VV")
 summarize(ds_pre["vh"], "PRE VH")
 summarize(ds_post["vv"], "POST VV")
 summarize(ds_post["vh"], "POST VH")
+
+# %%
