@@ -64,18 +64,30 @@ This project was motivated by curiosity about:
 ---
 
 ## Results
+*NOTE: These images are visualized using the **same display stretch** to avoid misleading contrast differences between dates.*
 
 ### Pre-event SAR composite
 *(VV / VH / VV−VH, shared stretch)*
 ![Pre SAR composite](outputs/plots/pre_rgb_shared.png)
+**Interpretation:**  
+In the pre-event SAR composite, stable surface features provide useful reference points for comparison. Open water bodies such as the ocean, rivers, and reservoirs appear in dark blue to purple tones due to low backscatter. Vegetated and forested areas are primarily rendered in green, reflecting stronger volume scattering from vegetation. Urban and built-up areas appear brighter, often in yellow or pink tones, corresponding to strong radar returns from buildings and infrastructure.
+
+This image represents baseline surface conditions prior to Hurricane Harvey and is used as a visual reference for identifying post-event changes.
 
 
 ### Post-event SAR composite
 *(VV / VH / VV−VH, shared stretch)*
 ![Post SAR composite](outputs/plots/post_rgb_shared.png)
+**Interpretation:**  
+In the post-event composite, notable changes in color and texture are visible across the landscape. Expanded areas of blue and purple tones indicate increased surface water extent following the hurricane. Some regions that previously appeared green or bright now exhibit darker or purplish hues, suggesting flooding of vegetated areas or the presence of debris within floodwaters.
 
+Urban areas remain relatively bright, but localized changes in surrounding regions highlight the impact of flooding on adjacent land cover. These patterns are consistent with widespread inundation following Hurricane Harvey.
 
-These images are visualized using the **same display stretch** to avoid misleading contrast differences between dates.
+**Pre vs Post comparison:**  
+When comparing the pre- and post-event composites using the same display stretch, differences are more readily attributable to surface change rather than visualization artifacts. Many areas that were previously dry land appear blue in the post-event image, indicating newly submerged surfaces. Purple tones in some flooded regions may reflect vegetation or debris within standing water.
+
+Stable features such as major roads, urban cores, and permanent water bodies serve as reference points, helping distinguish true flooding signals from sensor geometry or land-cover-related backscatter variations.
+
 
 ---
 
