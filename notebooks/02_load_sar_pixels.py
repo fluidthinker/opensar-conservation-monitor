@@ -23,7 +23,7 @@ print("Repo root:", repo_root)
 
 
 # %%
-from pathlib import Path
+import matplotlib.pyplot as plt
 import pandas as pd
 
 # Import your ingestion module (adjust this import based on where you saved it)
@@ -262,13 +262,16 @@ show_rgb(rgb_post, "POST composite (shared stretch)")
 
 # %%
 # FINAL) Save portfolio-ready PRE/POST SAR composites (shared stretch)
+# %%
+# FINAL) Save portfolio-ready PRE/POST SAR composites to repo_root/outputs/plots
 
 import matplotlib.pyplot as plt
+from pathlib import Path
 
-out_dir = OUT_DIR
-out_dir.mkdir(parents=True, exist_ok=True)
+plots_dir = repo_root / "outputs" / "plots"
+plots_dir.mkdir(parents=True, exist_ok=True)
 
-def save_rgb(rgb, path, title):
+def save_rgb(rgb, path: Path, title: str):
     img = rgb.transpose("y", "x", "band").values
     plt.figure(figsize=(8, 6))
     plt.imshow(img)
@@ -277,25 +280,24 @@ def save_rgb(rgb, path, title):
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
 
+pre_png = plots_dir / "pre_rgb_shared.png"
+post_png = plots_dir / "post_rgb_shared.png"
+
 save_rgb(
     rgb_pre,
-    out_dir / "pre_rgb_shared.png",
+    pre_png,
     "Pre-event SAR composite (VV / VH / VV−VH, shared stretch)"
 )
 
 save_rgb(
     rgb_post,
-    out_dir / "post_rgb_shared.png",
+    post_png,
     "Post-event SAR composite (VV / VH / VV−VH, shared stretch)"
 )
 
 print("Saved:")
-print(" - outputs/pre_rgb_shared.png")
-print(" - outputs/post_rgb_shared.png")
-
-
-
-
+print(" -", pre_png)
+print(" -", post_png)
 
 
 

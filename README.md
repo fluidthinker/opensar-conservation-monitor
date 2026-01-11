@@ -6,6 +6,20 @@ This project explores how to reproduce the core of an ESRI SAR pre/post comparis
 The work demonstrates how Sentinel-1 SAR data can be accessed via STAC, loaded into xarray, and visualized in a consistent way using shared display settings.
 
 ---
+## Credit
+## ESRI lesson credit (inspiration)
+This project was inspired by the ESRI ArcGIS Learn lesson:
+
+- **Explore SAR satellite imagery — Identify flooded areas**  
+  https://learn.arcgis.com/en/projects/explore-sar-satellite-imagery/#identify-flooded-areas
+
+The lesson frames the scenario as follows:
+
+> “In the last scenario, as an image analyst for the U.S. Federal Emergency Management Agency (FEMA), you will identify areas flooded by Hurricane Harvey in the area of Freeport, Texas. Working with analysis-ready SAR images captured before and after the hurricane, you'll learn about polarization bands and derive two color composites. Then you'll use the swipe tool to visualize the flooded areas.”
+
+
+
+---
 
 ## Motivation
 Synthetic Aperture Radar (SAR) is widely used for flood monitoring and surface change analysis, but many workflows are tied to proprietary tools or abstract away key decisions.
@@ -24,6 +38,15 @@ An ESRI Sentinel-1 tutorial provided the conceptual inspiration, but all impleme
 - **Polarizations:** VV and VH  
 - **Access:** Planetary Computer STAC API  
 - **Context:** Pre- and post-event scenes around Hurricane Harvey (2017)
+
+---
+## Imagery context
+- **AOI:** Freeport, Texas area (configured via `configs/aoi_bbox.yaml`)
+- **Sensor/product:** Sentinel-1 GRD (VV/VH)
+- **Pre-event target date:** 2017-08-05 (UTC)
+- **Post-event target date:** 2017-08-29 (UTC)
+- **Scene selection goal:** choose geometrically comparable acquisitions (same orbit direction) to support fair pre/post visual comparison.
+
 
 ---
 
@@ -46,13 +69,13 @@ An ESRI Sentinel-1 tutorial provided the conceptual inspiration, but all impleme
 
 ### Pre-event SAR composite
 *(VV / VH / VV−VH, shared stretch)*
+![Pre SAR composite](outputs/plots/pre_rgb_shared.png)
 
-![Pre SAR composite](outputs/pre_rgb_shared.png)
 
 ### Post-event SAR composite
 *(VV / VH / VV−VH, shared stretch)*
+![Post SAR composite](outputs/plots/post_rgb_shared.png)
 
-![Post SAR composite](outputs/post_rgb_shared.png)
 
 These images are visualized using the **same display stretch** to avoid misleading contrast differences between dates.
 
