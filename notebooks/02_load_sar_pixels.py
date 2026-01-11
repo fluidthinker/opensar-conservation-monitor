@@ -260,144 +260,46 @@ def show_rgb(rgb: xr.DataArray, title: str):
 show_rgb(rgb_pre,  "PRE composite (shared stretch)")
 show_rgb(rgb_post, "POST composite (shared stretch)")
 
-
 # %%
-# 18) Downsample for display-only (optional)
-rgb_pre_small  = rgb_pre.isel(y=slice(None, None, 4), x=slice(None, None, 4))
-rgb_post_small = rgb_post.isel(y=slice(None, None, 4), x=slice(None, None, 4))
+# FINAL) Save portfolio-ready PRE/POST SAR composites (shared stretch)
 
-show_rgb(rgb_pre_small,  "PRE composite (downsampled for display)")
-show_rgb(rgb_post_small, "POST composite (downsampled for display)")
-
-
-# %%
-# 19) Simple change layers
-dvv  = vv_post - vv_pre
-dvh  = vh_post - vh_pre
-ddif = diff_post - diff_pre
-
-def qstats(da: xr.DataArray, name: str):
-    q = da.quantile([0.02, 0.5, 0.98], dim=("y", "x"), skipna=True)
-    print(f"{name}: p2={float(q.sel(quantile=0.02).values):.3f}, "
-          f"median={float(q.sel(quantile=0.5).values):.3f}, "
-          f"p98={float(q.sel(quantile=0.98).values):.3f}")
-
-qstats(dvv,  "ΔVV (POST-PRE)")
-qstats(dvh,  "ΔVH (POST-PRE)")
-qstats(ddif, "Δ(VV−VH) (POST-PRE)")
-
-# 20) Intentially deleted
-
-
-
-# %%
-# 21) Diagnose why the change looks flat: print robust stats for the linear deltas
-def qstats(da, name):
-    q = da.quantile([0.02, 0.5, 0.98], dim=("y", "x"), skipna=True)
-    print(
-        f"{name}: p2={float(q.sel(quantile=0.02).values):.3f}, "
-        f"median={float(q.sel(quantile=0.5).values):.3f}, "
-        f"p98={float(q.sel(quantile=0.98).values):.3f}"
-    )
-
-qstats(dvv,  "ΔVV linear (POST-PRE)")
-qstats(dvh,  "ΔVH linear (POST-PRE)")
-qstats(ddif, "Δ(VV−VH) linear (POST-PRE)")
-
-
-# %%
-# 22) Plot deltas with a robust, symmetric stretch around 0 + colorbar
-#     This is the quickest way to reveal subtle change patterns.
 import matplotlib.pyplot as plt
-import numpy as np
 
-def plot_delta(da, title, p=98):
-    # robust symmetric limits around 0 using percentile of absolute values
-    abs_p = float(np.nanpercentile(np.abs(da.values), p))
-    plt.figure()
-    plt.imshow(da.values, vmin=-abs_p, vmax=abs_p, cmap="RdBu_r")
-    plt.title(f"{title} (±p{p} abs)")
-    plt.axis("off")
-    plt.colorbar(shrink=0.8)
-    plt.show()
-
-plot_delta(dvv,  "ΔVV linear (POST-PRE)", p=98)
-plot_delta(dvh,  "ΔVH linear (POST-PRE)", p=98)
-plot_delta(ddif, "Δ(VV−VH) linear (POST-PRE)", p=98)
-
-
-# %%
-# 23) Convert VV/VH to dB, then compute deltas in dB (usually much more interpretable)
-#     NOTE: We add a tiny epsilon to avoid log(0).
-eps = 1e-6
-
-vv_pre_db  = 10.0 * np.log10(vv_pre + eps)
-vh_pre_db  = 10.0 * np.log10(vh_pre + eps)
-vv_post_db = 10.0 * np.log10(vv_post + eps)
-vh_post_db = 10.0 * np.log10(vh_post + eps)
-
-dvv_db = vv_post_db - vv_pre_db
-dvh_db = vh_post_db - vh_pre_db
-
-qstats(dvv_db, "ΔVV dB (POST-PRE)")
-qstats(dvh_db, "ΔVH dB (POST-PRE)")
-
-
-# %%
-# 24) Plot dB deltas with robust symmetric stretch around 0
-plot_delta(dvv_db, "ΔVV dB (POST-PRE)", p=98)
-plot_delta(dvh_db, "ΔVH dB (POST-PRE)", p=98)
-
-
-
-
-
-
-
-
-
-# %%
-# XX) (Optional) Save portfolio-ready PNGs of PRE/POST composites (shared stretch)
-#     Uses downsampled versions for speed/size; switch to rgb_pre/rgb_post for full-res.
-out_dir = OUT_DIR  # from your module import
+out_dir = OUT_DIR
 out_dir.mkdir(parents=True, exist_ok=True)
 
-def save_rgb_png(rgb: xr.DataArray, path, title: str):
+def save_rgb(rgb, path, title):
     img = rgb.transpose("y", "x", "band").values
-    plt.figure()
+    plt.figure(figsize=(8, 6))
     plt.imshow(img)
     plt.title(title)
     plt.axis("off")
     plt.savefig(path, dpi=200, bbox_inches="tight")
     plt.close()
 
-save_rgb_png(rgb_pre_small,  out_dir / "pre_rgb_shared.png",  "PRE composite (shared stretch)")
-save_rgb_png(rgb_post_small, out_dir / "post_rgb_shared.png", "POST composite (shared stretch)")
+save_rgb(
+    rgb_pre,
+    out_dir / "pre_rgb_shared.png",
+    "Pre-event SAR composite (VV / VH / VV−VH, shared stretch)"
+)
 
-print("Wrote:")
-print(" -", out_dir / "pre_rgb_shared.png")
-print(" -", out_dir / "post_rgb_shared.png")
+save_rgb(
+    rgb_post,
+    out_dir / "post_rgb_shared.png",
+    "Post-event SAR composite (VV / VH / VV−VH, shared stretch)"
+)
+
+print("Saved:")
+print(" - outputs/pre_rgb_shared.png")
+print(" - outputs/post_rgb_shared.png")
+
+
+
+
+
+
+
+
 
 
 # %%
-# XX) (Optional) Save change PNGs (downsampled for speed/size)
-dvv_small  = dvv.isel(y=slice(None, None, 4), x=slice(None, None, 4))
-dvh_small  = dvh.isel(y=slice(None, None, 4), x=slice(None, None, 4))
-ddif_small = ddif.isel(y=slice(None, None, 4), x=slice(None, None, 4))
-
-def save_layer_png(layer: xr.DataArray, path, title: str):
-    plt.figure()
-    plt.imshow(layer.values)
-    plt.title(title)
-    plt.axis("off")
-    plt.savefig(path, dpi=200, bbox_inches="tight")
-    plt.close()
-
-save_layer_png(dvv_small,  out_dir / "change_dvv.png",  "ΔVV (POST - PRE)")
-save_layer_png(dvh_small,  out_dir / "change_dvh.png",  "ΔVH (POST - PRE)")
-save_layer_png(ddif_small, out_dir / "change_ddif.png", "Δ(VV−VH) (POST - PRE)")
-
-print("Wrote:")
-print(" -", out_dir / "change_dvv.png")
-print(" -", out_dir / "change_dvh.png")
-print(" -", out_dir / "change_ddif.png")
