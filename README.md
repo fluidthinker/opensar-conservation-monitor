@@ -1,13 +1,6 @@
 # Open-Source SAR Pre/Post Comparison (Sentinel-1)
 
 ## Overview
-This project explores how to reproduce the core of an ESRI SAR pre/post comparison workflow using **open-source Python tools**. The focus is on **reproducible data access**, **SAR-aware scene selection**, and **honest visual comparison**, rather than automated classification or operational change detection.
-
-The work demonstrates how Sentinel-1 SAR data can be accessed via STAC, loaded into xarray, and visualized in a consistent way using shared display settings.
-
----
-## Credit
-## ESRI lesson credit (inspiration)
 This project was inspired by the ESRI ArcGIS Learn lesson:
 
 - **Explore SAR satellite imagery — Identify flooded areas**  
@@ -16,6 +9,12 @@ This project was inspired by the ESRI ArcGIS Learn lesson:
 The lesson frames the scenario as follows:
 
 > “In the last scenario, as an image analyst for the U.S. Federal Emergency Management Agency (FEMA), you will identify areas flooded by Hurricane Harvey in the area of Freeport, Texas. Working with analysis-ready SAR images captured before and after the hurricane, you'll learn about polarization bands and derive two color composites. Then you'll use the swipe tool to visualize the flooded areas.”
+
+The goal of this project was to reproduce the **core pre/post SAR comparison workflow** from the ESRI lesson using **open-source Python tools**. The lesson’s guided scenario and reference interpretation provided important context for learning.
+
+The focus is on **reproducible data access**, **SAR-aware scene selection**, and **honest visual comparison**, rather than automated classification or operational change detection.
+
+This work demonstrates how Sentinel-1 SAR data can be accessed via STAC, loaded into xarray, and visualized in a consistent way using shared display settings.
 
 
 
@@ -29,7 +28,6 @@ This project was motivated by curiosity about:
 - how to ensure fair pre/post comparison, and
 - how to make data access and selection decisions explicit and reproducible.
 
-An ESRI Sentinel-1 tutorial provided the conceptual inspiration, but all implementation here uses open-source libraries.
 
 ---
 
@@ -87,6 +85,33 @@ A shared display stretch is applied to both pre- and post-event images to ensure
 
 ---
 
-## Transparency & Reproducibility
-- All candidate pre- and post-event scenes are s
 
+
+## Transparency & Reproducibility
+- All candidate pre- and post-event scenes are saved as CSV manifests for inspection.
+- Loaded pixel data are cached locally as NetCDF files to separate remote data access from analysis.
+- Scene selection criteria (time window, orbit direction, polarizations) are explicit in code.
+
+---
+
+## Limitations
+- This project stops at visual comparison and does not attempt automated flood classification.
+- SAR backscatter interpretation depends strongly on land cover and context.
+- Further steps such as calibration, speckle filtering, dB conversion, and validation would be required for operational analysis.
+
+---
+
+## Future Work
+- Incorporate land-cover context to aid interpretation.
+- Convert backscatter to dB for quantitative analysis.
+- Apply the same workflow to simpler change-detection examples (e.g., lake area change or vegetation indices).
+
+---
+
+## Tools & Libraries
+- pystac-client  
+- planetary-computer  
+- odc-stac  
+- xarray / rioxarray  
+- pandas  
+- matplotlib  
