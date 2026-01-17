@@ -1,0 +1,24 @@
+name: geospatial
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - rasterio
+  - rioxarray
+  - scipy
+  - jupyterlab
+  - plotly
+  - scikit-learn
+  - geopandas
+  - folium
+  - seaborn
+  - matplotlib
+  - earthpy
+  - nbconvert
+  - esda
+  - libpysal
+  - contextily
+  - planetary-computer
+  - tqdm
+  - odc-stac
+  - dask 
